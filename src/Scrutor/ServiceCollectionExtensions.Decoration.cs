@@ -15,14 +15,15 @@ public static partial class ServiceCollectionExtensions
     /// using the specified type <typeparamref name="TDecorator"/>.
     /// </summary>
     /// <param name="services">The services to add to.</param>
+    /// <param name="decoratorLifetime">The lifetime of the decorator. If no value (or <see langword="null" />) is supplied, the lifetime of the decorator will match the lifetime of the decorated service.</param>
     /// <exception cref="DecorationException">If no service of the type <typeparamref name="TService"/> has been registered.</exception>
     /// <exception cref="ArgumentNullException">If the <paramref name="services"/> argument is <c>null</c>.</exception>
-    public static IServiceCollection Decorate<TService, TDecorator>(this IServiceCollection services)
+    public static IServiceCollection Decorate<TService, TDecorator>(this IServiceCollection services, ServiceLifetime? decoratorLifetime = null)
         where TDecorator : TService
     {
         Preconditions.NotNull(services, nameof(services));
 
-        return services.Decorate(typeof(TService), typeof(TDecorator));
+        return services.Decorate(typeof(TService), typeof(TDecorator), decoratorLifetime);
     }
 
     /// <summary>
@@ -30,13 +31,14 @@ public static partial class ServiceCollectionExtensions
     /// using the specified type <typeparamref name="TDecorator"/>.
     /// </summary>
     /// <param name="services">The services to add to.</param>
+    /// <param name="decoratorLifetime">The lifetime of the decorator. If no value (or <see langword="null" />) is supplied, the lifetime of the decorator will match the lifetime of the decorated service.</param>
     /// <exception cref="ArgumentNullException">If the <paramref name="services"/> argument is <c>null</c>.</exception>
-    public static bool TryDecorate<TService, TDecorator>(this IServiceCollection services)
+    public static bool TryDecorate<TService, TDecorator>(this IServiceCollection services, ServiceLifetime? decoratorLifetime = null)
         where TDecorator : TService
     {
         Preconditions.NotNull(services, nameof(services));
 
-        return services.TryDecorate(typeof(TService), typeof(TDecorator));
+        return services.TryDecorate(typeof(TService), typeof(TDecorator), decoratorLifetime);
     }
 
     /// <summary>
@@ -46,16 +48,17 @@ public static partial class ServiceCollectionExtensions
     /// <param name="services">The services to add to.</param>
     /// <param name="serviceType">The type of services to decorate.</param>
     /// <param name="decoratorType">The type to decorate existing services with.</param>
+    /// <param name="decoratorLifetime">The lifetime of the decorator. If no value (or <see langword="null" />) is supplied, the lifetime of the decorator will match the lifetime of the decorated service.</param>
     /// <exception cref="DecorationException">If no service of the specified <paramref name="serviceType"/> has been registered.</exception>
     /// <exception cref="ArgumentNullException">If either the <paramref name="services"/>,
     /// <paramref name="serviceType"/> or <paramref name="decoratorType"/> arguments are <c>null</c>.</exception>
-    public static IServiceCollection Decorate(this IServiceCollection services, Type serviceType, Type decoratorType)
+    public static IServiceCollection Decorate(this IServiceCollection services, Type serviceType, Type decoratorType, ServiceLifetime? decoratorLifetime = null)
     {
         Preconditions.NotNull(services, nameof(services));
         Preconditions.NotNull(serviceType, nameof(serviceType));
         Preconditions.NotNull(decoratorType, nameof(decoratorType));
 
-        return services.Decorate(DecorationStrategy.WithType(serviceType, serviceKey: null, decoratorType));
+        return services.Decorate(DecorationStrategy.WithType(serviceType, serviceKey: null, decoratorType, decoratorLifetime));
     }
 
     /// <summary>
@@ -65,15 +68,16 @@ public static partial class ServiceCollectionExtensions
     /// <param name="services">The services to add to.</param>
     /// <param name="serviceType">The type of services to decorate.</param>
     /// <param name="decoratorType">The type to decorate existing services with.</param>
+    /// <param name="decoratorLifetime">The lifetime of the decorator. If no value (or <see langword="null" />) is supplied, the lifetime of the decorator will match the lifetime of the decorated service.</param>
     /// <exception cref="ArgumentNullException">If either the <paramref name="services"/>,
     /// <paramref name="serviceType"/> or <paramref name="decoratorType"/> arguments are <c>null</c>.</exception>
-    public static bool TryDecorate(this IServiceCollection services, Type serviceType, Type decoratorType)
+    public static bool TryDecorate(this IServiceCollection services, Type serviceType, Type decoratorType, ServiceLifetime? decoratorLifetime = null)
     {
         Preconditions.NotNull(services, nameof(services));
         Preconditions.NotNull(serviceType, nameof(serviceType));
         Preconditions.NotNull(decoratorType, nameof(decoratorType));
 
-        return services.TryDecorate(DecorationStrategy.WithType(serviceType, serviceKey: null, decoratorType));
+        return services.TryDecorate(DecorationStrategy.WithType(serviceType, serviceKey: null, decoratorType, decoratorLifetime));
     }
 
     /// <summary>
@@ -83,15 +87,16 @@ public static partial class ServiceCollectionExtensions
     /// <typeparam name="TService">The type of services to decorate.</typeparam>
     /// <param name="services">The services to add to.</param>
     /// <param name="decorator">The decorator function.</param>
+    /// <param name="decoratorLifetime">The lifetime of the decorator. If no value (or <see langword="null" />) is supplied, the lifetime of the decorator will match the lifetime of the decorated service.</param>
     /// <exception cref="DecorationException">If no service of <typeparamref name="TService"/> has been registered.</exception>
     /// <exception cref="ArgumentNullException">If either the <paramref name="services"/>
     /// or <paramref name="decorator"/> arguments are <c>null</c>.</exception>
-    public static IServiceCollection Decorate<TService>(this IServiceCollection services, Func<TService, TService> decorator) where TService : notnull
+    public static IServiceCollection Decorate<TService>(this IServiceCollection services, Func<TService, TService> decorator, ServiceLifetime? decoratorLifetime = null) where TService : notnull
     {
         Preconditions.NotNull(services, nameof(services));
         Preconditions.NotNull(decorator, nameof(decorator));
 
-        return services.Decorate<TService>((service, _) => decorator(service));
+        return services.Decorate<TService>((service, _) => decorator(service), decoratorLifetime);
     }
 
     /// <summary>
@@ -101,14 +106,15 @@ public static partial class ServiceCollectionExtensions
     /// <typeparam name="TService">The type of services to decorate.</typeparam>
     /// <param name="services">The services to add to.</param>
     /// <param name="decorator">The decorator function.</param>
+    /// <param name="decoratorLifetime">The lifetime of the decorator. If no value (or <see langword="null" />) is supplied, the lifetime of the decorator will match the lifetime of the decorated service.</param>
     /// <exception cref="ArgumentNullException">If either the <paramref name="services"/>
     /// or <paramref name="decorator"/> arguments are <c>null</c>.</exception>
-    public static bool TryDecorate<TService>(this IServiceCollection services, Func<TService, TService> decorator) where TService : notnull
+    public static bool TryDecorate<TService>(this IServiceCollection services, Func<TService, TService> decorator, ServiceLifetime? decoratorLifetime = null) where TService : notnull
     {
         Preconditions.NotNull(services, nameof(services));
         Preconditions.NotNull(decorator, nameof(decorator));
 
-        return services.TryDecorate<TService>((service, _) => decorator(service));
+        return services.TryDecorate<TService>((service, _) => decorator(service), decoratorLifetime);
     }
 
     /// <summary>
@@ -118,15 +124,16 @@ public static partial class ServiceCollectionExtensions
     /// <typeparam name="TService">The type of services to decorate.</typeparam>
     /// <param name="services">The services to add to.</param>
     /// <param name="decorator">The decorator function.</param>
+    /// <param name="decoratorLifetime">The lifetime of the decorator. If no value (or <see langword="null" />) is supplied, the lifetime of the decorator will match the lifetime of the decorated service.</param>
     /// <exception cref="DecorationException">If no service of <typeparamref name="TService"/> has been registered.</exception>
     /// <exception cref="ArgumentNullException">If either the <paramref name="services"/>
     /// or <paramref name="decorator"/> arguments are <c>null</c>.</exception>
-    public static IServiceCollection Decorate<TService>(this IServiceCollection services, Func<TService, IServiceProvider, TService> decorator) where TService : notnull
+    public static IServiceCollection Decorate<TService>(this IServiceCollection services, Func<TService, IServiceProvider, TService> decorator, ServiceLifetime? decoratorLifetime = null) where TService : notnull
     {
         Preconditions.NotNull(services, nameof(services));
         Preconditions.NotNull(decorator, nameof(decorator));
 
-        return services.Decorate(typeof(TService), (service, provider) => decorator((TService)service, provider));
+        return services.Decorate(typeof(TService), (service, provider) => decorator((TService)service, provider), decoratorLifetime);
     }
 
     /// <summary>
@@ -136,14 +143,15 @@ public static partial class ServiceCollectionExtensions
     /// <typeparam name="TService">The type of services to decorate.</typeparam>
     /// <param name="services">The services to add to.</param>
     /// <param name="decorator">The decorator function.</param>
+    /// <param name="decoratorLifetime">The lifetime of the decorator. If no value (or <see langword="null" />) is supplied, the lifetime of the decorator will match the lifetime of the decorated service.</param>
     /// <exception cref="ArgumentNullException">If either the <paramref name="services"/>
     /// or <paramref name="decorator"/> arguments are <c>null</c>.</exception>
-    public static bool TryDecorate<TService>(this IServiceCollection services, Func<TService, IServiceProvider, TService> decorator) where TService : notnull
+    public static bool TryDecorate<TService>(this IServiceCollection services, Func<TService, IServiceProvider, TService> decorator, ServiceLifetime? decoratorLifetime = null) where TService : notnull
     {
         Preconditions.NotNull(services, nameof(services));
         Preconditions.NotNull(decorator, nameof(decorator));
 
-        return services.TryDecorate(typeof(TService), (service, provider) => decorator((TService)service, provider));
+        return services.TryDecorate(typeof(TService), (service, provider) => decorator((TService)service, provider), decoratorLifetime);
     }
 
     /// <summary>
@@ -153,16 +161,17 @@ public static partial class ServiceCollectionExtensions
     /// <param name="services">The services to add to.</param>
     /// <param name="serviceType">The type of services to decorate.</param>
     /// <param name="decorator">The decorator function.</param>
+    /// <param name="decoratorLifetime">The lifetime of the decorator. If no value (or <see langword="null" />) is supplied, the lifetime of the decorator will match the lifetime of the decorated service.</param>
     /// <exception cref="DecorationException">If no service of the specified <paramref name="serviceType"/> has been registered.</exception>
     /// <exception cref="ArgumentNullException">If either the <paramref name="services"/>,
     /// <paramref name="serviceType"/> or <paramref name="decorator"/> arguments are <c>null</c>.</exception>
-    public static IServiceCollection Decorate(this IServiceCollection services, Type serviceType, Func<object, object> decorator)
+    public static IServiceCollection Decorate(this IServiceCollection services, Type serviceType, Func<object, object> decorator, ServiceLifetime? decoratorLifetime = null)
     {
         Preconditions.NotNull(services, nameof(services));
         Preconditions.NotNull(serviceType, nameof(serviceType));
         Preconditions.NotNull(decorator, nameof(decorator));
 
-        return services.Decorate(serviceType, (decorated, _) => decorator(decorated));
+        return services.Decorate(serviceType, (decorated, _) => decorator(decorated), decoratorLifetime);
     }
 
     /// <summary>
@@ -172,15 +181,16 @@ public static partial class ServiceCollectionExtensions
     /// <param name="services">The services to add to.</param>
     /// <param name="serviceType">The type of services to decorate.</param>
     /// <param name="decorator">The decorator function.</param>
+    /// <param name="decoratorLifetime">The lifetime of the decorator. If no value (or <see langword="null" />) is supplied, the lifetime of the decorator will match the lifetime of the decorated service.</param>
     /// <exception cref="ArgumentNullException">If either the <paramref name="services"/>,
     /// <paramref name="serviceType"/> or <paramref name="decorator"/> arguments are <c>null</c>.</exception>
-    public static bool TryDecorate(this IServiceCollection services, Type serviceType, Func<object, object> decorator)
+    public static bool TryDecorate(this IServiceCollection services, Type serviceType, Func<object, object> decorator, ServiceLifetime? decoratorLifetime = null)
     {
         Preconditions.NotNull(services, nameof(services));
         Preconditions.NotNull(serviceType, nameof(serviceType));
         Preconditions.NotNull(decorator, nameof(decorator));
 
-        return services.TryDecorate(serviceType, (decorated, _) => decorator(decorated));
+        return services.TryDecorate(serviceType, (decorated, _) => decorator(decorated), decoratorLifetime);
     }
 
     /// <summary>
@@ -190,16 +200,17 @@ public static partial class ServiceCollectionExtensions
     /// <param name="services">The services to add to.</param>
     /// <param name="serviceType">The type of services to decorate.</param>
     /// <param name="decorator">The decorator function.</param>
+    /// <param name="decoratorLifetime">The lifetime of the decorator. If no value (or <see langword="null" />) is supplied, the lifetime of the decorator will match the lifetime of the decorated service.</param>
     /// <exception cref="DecorationException">If no service of the specified <paramref name="serviceType"/> has been registered.</exception>
     /// <exception cref="ArgumentNullException">If either the <paramref name="services"/>,
     /// <paramref name="serviceType"/> or <paramref name="decorator"/> arguments are <c>null</c>.</exception>
-    public static IServiceCollection Decorate(this IServiceCollection services, Type serviceType, Func<object, IServiceProvider, object> decorator)
+    public static IServiceCollection Decorate(this IServiceCollection services, Type serviceType, Func<object, IServiceProvider, object> decorator, ServiceLifetime? decoratorLifetime = null)
     {
         Preconditions.NotNull(services, nameof(services));
         Preconditions.NotNull(serviceType, nameof(serviceType));
         Preconditions.NotNull(decorator, nameof(decorator));
 
-        return services.Decorate(DecorationStrategy.WithFactory(serviceType, serviceKey: null, decorator));
+        return services.Decorate(DecorationStrategy.WithFactory(serviceType, serviceKey: null, decorator, decoratorLifetime));
     }
 
     /// <summary>
@@ -209,15 +220,16 @@ public static partial class ServiceCollectionExtensions
     /// <param name="services">The services to add to.</param>
     /// <param name="serviceType">The type of services to decorate.</param>
     /// <param name="decorator">The decorator function.</param>
+    /// <param name="decoratorLifetime">The lifetime of the decorator. If no value (or <see langword="null" />) is supplied, the lifetime of the decorator will match the lifetime of the decorated service.</param>
     /// <exception cref="ArgumentNullException">If either the <paramref name="services"/>,
     /// <paramref name="serviceType"/> or <paramref name="decorator"/> arguments are <c>null</c>.</exception>
-    public static bool TryDecorate(this IServiceCollection services, Type serviceType, Func<object, IServiceProvider, object> decorator)
+    public static bool TryDecorate(this IServiceCollection services, Type serviceType, Func<object, IServiceProvider, object> decorator, ServiceLifetime? decoratorLifetime = null)
     {
         Preconditions.NotNull(services, nameof(services));
         Preconditions.NotNull(serviceType, nameof(serviceType));
         Preconditions.NotNull(decorator, nameof(decorator));
 
-        return services.TryDecorate(DecorationStrategy.WithFactory(serviceType, serviceKey: null, decorator));
+        return services.TryDecorate(DecorationStrategy.WithFactory(serviceType, serviceKey: null, decorator, decoratorLifetime));
     }
 
     /// <summary>
@@ -264,10 +276,16 @@ public static partial class ServiceCollectionExtensions
             }
 
             // Insert decorated
-            services.Add(serviceDescriptor.WithServiceKey(serviceKey));
+            services.Add(serviceDescriptor.WithServiceKey(serviceKey, serviceDescriptor.Lifetime));
 
             // Replace decorator
-            services[i] = serviceDescriptor.WithImplementationFactory(strategy.CreateDecorator(serviceDescriptor.ServiceType, serviceKey));
+            if (strategy.DecoratorLifetime.HasValue && strategy.DecoratorLifetime < serviceDescriptor.Lifetime)
+            {
+                throw new InvalidOperationException("Decorated service lifetime is shorter than then decorator lifetime.");
+            }
+            services[i] = serviceDescriptor.WithImplementationFactory(
+                strategy.CreateDecorator(serviceDescriptor.ServiceType, serviceKey),
+                strategy.DecoratorLifetime ?? serviceDescriptor.Lifetime);
 
             decorated = true;
         }

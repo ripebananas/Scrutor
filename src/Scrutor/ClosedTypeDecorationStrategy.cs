@@ -1,10 +1,12 @@
 ﻿using System;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Scrutor;
 
 internal sealed class ClosedTypeDecorationStrategy : DecorationStrategy
 {
-    public ClosedTypeDecorationStrategy(Type serviceType, string? serviceKey, Type? decoratorType, Func<object, IServiceProvider, object>? decoratorFactory) : base(serviceType, serviceKey)
+    public ClosedTypeDecorationStrategy(Type serviceType, string? serviceKey, Type? decoratorType, Func<object, IServiceProvider, object>? decoratorFactory, ServiceLifetime? decoratorLifetime)
+        : base(serviceType, serviceKey, decoratorLifetime)
     {
         DecoratorType = decoratorType;
         DecoratorFactory = decoratorFactory;

@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using Microsoft.Extensions.DependencyInjection;
-using Xunit;
 using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Xunit;
 
 namespace Scrutor.Tests;
 
@@ -478,6 +479,69 @@ public class DecorationTests : TestBase
         Assert.NotEqual(decorator1, decorator2);
         Assert.NotEqual(decorator1.Inner, decorator2.Inner);
         Assert.Equal(decorator1.Inner.Dependency, decorator2.Inner.Dependency);
+    }
+
+    [Theory]
+    [InlineData(ServiceLifetime.Singleton)]
+    [InlineData(ServiceLifetime.Scoped)]
+    [InlineData(ServiceLifetime.Transient)]
+    public void DecoratorLifetimeIfNotSpecifiedMatchesDecoratedServiceLifetime(ServiceLifetime serviceLifetime)
+    {
+        var services = new ServiceCollection
+        {
+            new ServiceDescriptor(typeof(IDecoratedService), typeof(Decorated), serviceLifetime)
+        };
+
+        services.Decorate<IDecoratedService, Decorator>();
+
+        var decoratorDescriptors = services
+            .GetDescriptors<IDecoratedService>()
+            .Where(x => !x.IsDecorated())
+            .ToArray();
+
+        Assert.Single(decoratorDescriptors);
+        Assert.Equal(serviceLifetime, decoratorDescriptors[0].Lifetime);
+    }
+
+    [Theory]
+    [InlineData(ServiceLifetime.Singleton, new[] { ServiceLifetime.Singleton, ServiceLifetime.Scoped, ServiceLifetime.Transient })]
+    [InlineData(ServiceLifetime.Scoped, new[] { ServiceLifetime.Scoped, ServiceLifetime.Transient })]
+    [InlineData(ServiceLifetime.Transient, new[] { ServiceLifetime.Transient })]
+    public void DecoratorLifetimeIfSpecifiedShouldBeRespected(ServiceLifetime serviceLifetime, ServiceLifetime[] allowedDecoratorLifetimes)
+    {
+        foreach (var decoratorLifetime in allowedDecoratorLifetimes)
+        {
+            var services = new ServiceCollection
+            {
+                new ServiceDescriptor(typeof(IDecoratedService), typeof(Decorated), serviceLifetime)
+            };
+
+            services.Decorate<IDecoratedService, Decorator>(decoratorLifetime);
+
+            var decoratorDescriptors = services
+                .GetDescriptors<IDecoratedService>()
+                .Where(x => !x.IsDecorated())
+                .ToArray();
+
+            Assert.Single(decoratorDescriptors);
+            Assert.Equal(decoratorLifetime, decoratorDescriptors[0].Lifetime);
+        }
+    }
+
+    [Theory]
+    [InlineData(ServiceLifetime.Scoped, new[] { ServiceLifetime.Singleton })]
+    [InlineData(ServiceLifetime.Transient, new[] { ServiceLifetime.Singleton, ServiceLifetime.Scoped })]
+    public void DecoratorLifetimeIfSpecifiedShouldBeShorterThanDecoratedServiceLifetime(ServiceLifetime serviceLifetime, ServiceLifetime[] notAllowedDecoratorLifetimes)
+    {
+        foreach (var decoratorLifetime in notAllowedDecoratorLifetimes)
+        {
+            var services = new ServiceCollection
+            {
+                new ServiceDescriptor(typeof(IDecoratedService), typeof(Decorated), serviceLifetime)
+            };
+
+            Assert.Throws<InvalidOperationException>(() => services.Decorate<IDecoratedService, Decorator>(decoratorLifetime));
+        }
     }
 
     #endregion

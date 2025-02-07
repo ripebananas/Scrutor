@@ -1,10 +1,12 @@
 ﻿using System;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Scrutor;
 
 public class OpenGenericDecorationStrategy : DecorationStrategy
 {
-    public OpenGenericDecorationStrategy(Type serviceType, string? serviceKey, Type? decoratorType, Func<object, IServiceProvider, object>? decoratorFactory) : base(serviceType, serviceKey)
+    public OpenGenericDecorationStrategy(Type serviceType, string? serviceKey, Type? decoratorType, Func<object, IServiceProvider, object>? decoratorFactory, ServiceLifetime? decoratorLifetime)
+        : base(serviceType, serviceKey, decoratorLifetime)
     {
         DecoratorType = decoratorType;
         DecoratorFactory = decoratorFactory;
