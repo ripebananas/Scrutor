@@ -238,14 +238,21 @@ public static partial class ServiceCollectionExtensions
     /// <param name="services">The services to add to.</param>
     /// <param name="strategy">The strategy for decorating services.</param>
     /// <exception cref="DecorationException">If no registered service matched the specified <paramref name="strategy"/>.</exception>
+    /// <exception cref="DecoratorLifetimeException">If the decorator lifetime is invalid.</exception>
     public static IServiceCollection Decorate(this IServiceCollection services, DecorationStrategy strategy)
     {
-        if (services.TryDecorate(strategy))
+        if (services.TryDecorate(strategy, out var validationError))
         {
             return services;
         }
 
-        throw new DecorationException(strategy);
+        switch (validationError)
+        {
+            case DecorationValidation.DecoratorLifetime:
+                throw new DecoratorLifetimeException(strategy);
+            default:
+                throw new DecorationException(strategy);
+        }
     }
 
     /// <summary>
@@ -258,6 +265,20 @@ public static partial class ServiceCollectionExtensions
         Preconditions.NotNull(services, nameof(services));
         Preconditions.NotNull(strategy, nameof(strategy));
 
+        return services.TryDecorate(strategy, out var _);
+    }
+
+    /// <summary>
+    /// Returns <c>true</c> if the specified service is decorated.
+    /// </summary>
+    /// <param name="descriptor">The service descriptor.</param>
+    public static bool IsDecorated(this ServiceDescriptor descriptor) =>
+        descriptor.ServiceKey is string stringKey
+            && stringKey.EndsWith(DecoratedServiceKeySuffix, StringComparison.Ordinal);
+
+    private static bool TryDecorate(this IServiceCollection services, DecorationStrategy strategy, out DecorationValidation? error)
+    {
+        error = null;
         var decorated = false;
 
         for (var i = services.Count - 1; i >= 0; i--)
@@ -272,6 +293,13 @@ public static partial class ServiceCollectionExtensions
             var serviceKey = GetDecoratorKey(serviceDescriptor);
             if (serviceKey is null)
             {
+                error = DecorationValidation.MissingService;
+                return false;
+            }
+
+            if (!IsValidDecoratorLifetime(strategy, serviceDescriptor))
+            {
+                error = DecorationValidation.DecoratorLifetime;
                 return false;
             }
 
@@ -279,10 +307,6 @@ public static partial class ServiceCollectionExtensions
             services.Add(serviceDescriptor.WithServiceKey(serviceKey, serviceDescriptor.Lifetime));
 
             // Replace decorator
-            if (strategy.DecoratorLifetime.HasValue && strategy.DecoratorLifetime < serviceDescriptor.Lifetime)
-            {
-                throw new InvalidOperationException("Decorated service lifetime is shorter than then decorator lifetime.");
-            }
             services[i] = serviceDescriptor.WithImplementationFactory(
                 strategy.CreateDecorator(serviceDescriptor.ServiceType, serviceKey),
                 strategy.DecoratorLifetime ?? serviceDescriptor.Lifetime);
@@ -292,14 +316,6 @@ public static partial class ServiceCollectionExtensions
 
         return decorated;
     }
-
-    /// <summary>
-    /// Returns <c>true</c> if the specified service is decorated.
-    /// </summary>
-    /// <param name="descriptor">The service descriptor.</param>
-    public static bool IsDecorated(this ServiceDescriptor descriptor) =>
-        descriptor.ServiceKey is string stringKey
-            && stringKey.EndsWith(DecoratedServiceKeySuffix, StringComparison.Ordinal);
 
     private static string? GetDecoratorKey(ServiceDescriptor descriptor)
     {
@@ -316,5 +332,16 @@ public static partial class ServiceCollectionExtensions
         }
 
         return null;
+    }
+
+    private static bool IsValidDecoratorLifetime(DecorationStrategy strategy, ServiceDescriptor serviceDescriptor)
+    {
+        if (!strategy.DecoratorLifetime.HasValue)
+        {
+            return true;
+        }
+
+        // Singleton = 0, Scoped = 1, Transient = 2
+        return strategy.DecoratorLifetime.Value >= serviceDescriptor.Lifetime;
     }
 }

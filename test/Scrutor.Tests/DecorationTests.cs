@@ -540,7 +540,7 @@ public class DecorationTests : TestBase
                 new ServiceDescriptor(typeof(IDecoratedService), typeof(Decorated), serviceLifetime)
             };
 
-            Assert.Throws<InvalidOperationException>(() => services.Decorate<IDecoratedService, Decorator>(decoratorLifetime));
+            Assert.Throws<DecoratorLifetimeException>(() => services.Decorate<IDecoratedService, Decorator>(decoratorLifetime));
         }
     }
 
